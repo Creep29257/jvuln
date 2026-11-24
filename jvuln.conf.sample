@@ -1,0 +1,21 @@
+# /usr/local/etc/jvuln.conf - plain sh syntax (VAR=value). Everything is optional.
+# Precedence: command line (-o) > environment > this file > built-in default.
+
+#LANG_UI=en                    # en | fr
+#TITLE="jvuln - myhost"
+#OUT=/var/db/jvuln/index.html  # where the page is written (default)
+#FILE_MODE=644                 # use 640/600 to restrict who can read it
+#FILE_OWNER=root:wheel
+
+# Which jails
+#JAIL_SOURCE=auto              # auto | bastille | jls (jls = running jails only)
+#INCLUDE_HOST=yes              # yes | no
+#EXCLUDE_JAILS="test-* old"    # sh patterns, space-separated
+#ONLY_JAILS=""                 # whitelist; empty = all
+
+# Bastille: write the page straight into a jail's filesystem
+# (no web server, readable only from inside that jail)
+#BASTILLE=/usr/local/bastille
+#MGMT_JAIL=management          # => $BASTILLE/jails/management/root/usr/local/share/jvuln/index.html
+
+#VULNDB=/var/db/pkg/vuln.xml
