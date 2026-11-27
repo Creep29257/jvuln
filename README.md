@@ -25,8 +25,8 @@ and who can read it.
     # daily, in root's crontab:
     30 5 * * * /usr/local/sbin/jvuln >> /var/log/jvuln.log 2>&1
 
-Options: `-c config` to use another config file, `-o file.html` to choose the
-output. See `jvuln.conf.sample` for everything else (language, jail filters,
+Options: `-c config` to use another config file, `-o file.html` to write to an
+exact file (no dated name, no symlink). See `jvuln.conf.sample` for everything else (language, jail filters,
 page title, file mode...).
 
 ## How it works
@@ -39,12 +39,19 @@ page title, file mode...).
   `jls` (running jails only). Directories without a pkg database (Linux jails,
   empty jails) are skipped.
 
-## Viewing the page only from one jail (Bastille)
+## Where the page goes
 
-    MGMT_JAIL=management
+`OUT_DIR` (default `/var/db/jvuln`) is the directory the page is written to,
+`OUT_NAME` its name as a `date(1)` format (default `jvuln-%Y%m%d.html`, one
+file per day). `jvuln-latest.html` is a symlink to the newest page.
 
-writes the page into that jail's filesystem. Open
-`file:///usr/local/share/jvuln/index.html` from a browser inside the jail.
+Because jvuln only writes a file, access control is yours: point `OUT_DIR` at
+a directory that only the right people (or a single jail) can read. Example:
+to make the page readable only from inside a Bastille jail, set `OUT_DIR` to
+a directory inside that jail's filesystem and open it with `file://`.
+
+Old pages are not removed; add a `find ... -mtime +30 -delete` to your cron
+if you want to prune them.
 
 ## Limits
 

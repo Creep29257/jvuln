@@ -8,13 +8,13 @@
 # Jails are found automatically: Bastille layout if present, otherwise the
 # running jails reported by jls(8) (works with iocage, ezjail, plain jail.conf...).
 #
-# Usage: jvuln.sh [-c config] [-o output.html]
+# Usage: jvuln.sh [-c config] [-o output.html]   (-o = exact file, no dated name)
 # Needs: pkg(8), root (to read jail pkg databases), network on the host only.
 #
 # License: BSD 2-clause.
 set -u
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin
-JVULN_VERSION="0.2"
+JVULN_VERSION="0.3"
 
 # --- Configuration --------------------------------------------------------
 # Precedence: command line > environment > config file > built-in default.
@@ -27,9 +27,10 @@ done
 # The config file is plain sh (VAR=value). Remember what the environment set,
 # source the file, then let the environment win again.
 _e_BASTILLE="${BASTILLE:-}"
-_e_MGMT_JAIL="${MGMT_JAIL:-}"
 _e_VULNDB="${VULNDB:-}"
-_e_OUT="${OUT:-}"
+_e_OUT_DIR="${OUT_DIR:-}"
+_e_OUT_NAME="${OUT_NAME:-}"
+_e_LATEST_LINK="${LATEST_LINK-__unset__}"
 _e_LANG_UI="${LANG_UI:-}"
 _e_JAIL_SOURCE="${JAIL_SOURCE:-}"
 _e_INCLUDE_HOST="${INCLUDE_HOST:-}"
@@ -41,9 +42,10 @@ _e_FILE_OWNER="${FILE_OWNER:-}"
 case "$CONF" in */*) ;; *) CONF="./$CONF" ;; esac   # "." searches PATH otherwise
 [ -r "$CONF" ] && . "$CONF"
 [ -n "$_e_BASTILLE" ] && BASTILLE=$_e_BASTILLE
-[ -n "$_e_MGMT_JAIL" ] && MGMT_JAIL=$_e_MGMT_JAIL
 [ -n "$_e_VULNDB" ] && VULNDB=$_e_VULNDB
-[ -n "$_e_OUT" ] && OUT=$_e_OUT
+[ -n "$_e_OUT_DIR" ] && OUT_DIR=$_e_OUT_DIR
+[ -n "$_e_OUT_NAME" ] && OUT_NAME=$_e_OUT_NAME
+[ "$_e_LATEST_LINK" != "__unset__" ] && LATEST_LINK=$_e_LATEST_LINK
 [ -n "$_e_LANG_UI" ] && LANG_UI=$_e_LANG_UI
 [ -n "$_e_JAIL_SOURCE" ] && JAIL_SOURCE=$_e_JAIL_SOURCE
 [ -n "$_e_INCLUDE_HOST" ] && INCLUDE_HOST=$_e_INCLUDE_HOST
@@ -55,8 +57,7 @@ case "$CONF" in */*) ;; *) CONF="./$CONF" ;; esac   # "." searches PATH otherwis
 
 LANG_UI="${LANG_UI:-en}"                      # en | fr
 JAIL_SOURCE="${JAIL_SOURCE:-auto}"            # auto | bastille | jls
-BASTILLE="${BASTILLE:-/usr/local/bastille}"   # only used with Bastille
-MGMT_JAIL="${MGMT_JAIL:-}"                    # Bastille jail that receives the page (optional)
+BASTILLE="${BASTILLE:-/usr/local/bastille}"   # Bastille prefix (jail discovery)
 VULNDB="${VULNDB:-/var/db/pkg/vuln.xml}"
 INCLUDE_HOST="${INCLUDE_HOST:-yes}"           # yes | no
 EXCLUDE_JAILS="${EXCLUDE_JAILS:-}"            # space-separated sh patterns, e.g. "test-* old"
@@ -64,14 +65,11 @@ ONLY_JAILS="${ONLY_JAILS:-}"                  # if set: whitelist of jail names
 TITLE="${TITLE:-jvuln - $(hostname)}"
 FILE_MODE="${FILE_MODE:-644}"
 FILE_OWNER="${FILE_OWNER:-}"                  # e.g. root:wheel
-if [ -z "${OUT:-}" ]; then
-	if [ -n "$MGMT_JAIL" ]; then
-		OUT="$BASTILLE/jails/$MGMT_JAIL/root/usr/local/share/jvuln/index.html"
-	else
-		OUT="/var/db/jvuln/index.html"
-	fi
-fi
-[ -n "$CLI_OUT" ] && OUT=$CLI_OUT
+OUT_DIR="${OUT_DIR:-/var/db/jvuln}"           # directory where the page is written
+OUT_NAME="${OUT_NAME:-jvuln-%Y%m%d.html}"     # file name, date(1) format: one file per day
+LATEST_LINK="${LATEST_LINK-jvuln-latest.html}" # symlink to the newest page; empty = none
+OUT="$OUT_DIR/$(date +"$OUT_NAME")"
+[ -n "$CLI_OUT" ] && { OUT=$CLI_OUT; LATEST_LINK=""; }
 
 # --- UI strings -----------------------------------------------------------
 case "$LANG_UI" in
@@ -278,4 +276,8 @@ JS
 cp "$H" "$OUT.new" && chmod "$FILE_MODE" "$OUT.new" || exit 1
 [ -n "$FILE_OWNER" ] && chown "$FILE_OWNER" "$OUT.new"
 mv "$OUT.new" "$OUT"
+# Stable name for the newest page (relative link: survives a jail path change).
+if [ -n "$LATEST_LINK" ]; then
+	ln -sf "$(basename "$OUT")" "$(dirname "$OUT")/$LATEST_LINK"
+fi
 echo "jvuln: $OUT $L_DONE ($(echo $TARGETS | wc -w | tr -d ' ') $L_TGT)"

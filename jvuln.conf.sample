@@ -3,9 +3,14 @@
 
 #LANG_UI=en                    # en | fr
 #TITLE="jvuln - myhost"
-#OUT=/var/db/jvuln/index.html  # where the page is written (default)
+#OUT_DIR=/var/db/jvuln         # directory where the page is written (default)
+#OUT_NAME="jvuln-%Y%m%d.html"  # file name, date(1) format (default: one file per day)
+#LATEST_LINK=jvuln-latest.html # symlink to the newest page; set empty to disable
 #FILE_MODE=644                 # use 640/600 to restrict who can read it
 #FILE_OWNER=root:wheel
+#
+# Example: drop the page where a jail can read it (no web server needed):
+#OUT_DIR=/usr/local/bastille/jails/management/root/usr/local/share/jvuln
 
 # Which jails
 #JAIL_SOURCE=auto              # auto | bastille | jls (jls = running jails only)
@@ -13,9 +18,6 @@
 #EXCLUDE_JAILS="test-* old"    # sh patterns, space-separated
 #ONLY_JAILS=""                 # whitelist; empty = all
 
-# Bastille: write the page straight into a jail's filesystem
-# (no web server, readable only from inside that jail)
-#BASTILLE=/usr/local/bastille
-#MGMT_JAIL=management          # => $BASTILLE/jails/management/root/usr/local/share/jvuln/index.html
+#BASTILLE=/usr/local/bastille  # Bastille prefix, used for jail discovery
 
 #VULNDB=/var/db/pkg/vuln.xml
